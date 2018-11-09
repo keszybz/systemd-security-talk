@@ -1,0 +1,197 @@
+\documentclass[serif]{beamer}
+%\usepackage[utopia]{mathdesign}
+%\usepackage[no-math]{fontspec}
+%\setmainfont{Liberation Serif}
+
+\usepackage{minted}
+% \usepackage{redhat}
+
+\title[Systemd security features]{Securing your daemons using systemd}
+\author{Zbigniew Jędrzejewski-Szmek}
+\institute{%
+  \includegraphics{beamer-themeredhat/redhat.png}\\
+  \medskip
+  \textit{zbyszek@in.waw.pl}
+}
+\date{\tiny 10.11.18}
+
+\begin{document}
+\begin{frame}
+\titlepage % Print the title page as the first slide
+\end{frame}
+
+\begin{frame}
+  \frametitle{Before we begin...\\Why use systemd for this at all?}
+  \begin{itemize}
+  \item centralization
+  \item abstraction of hardware architecture / kernel version
+  \item unprivileged operation
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Before we begin...\\Unit files}
+
+  \begin{minted}{ini}
+    # /etc/systemd/system/mydaemon.service
+    [Service]
+    ExecStart=/usr/local/bin/mydaemon
+  \end{minted}
+  \begin{minted}{console}
+    $ systemd-run mydaemon.service
+  \end{minted}
+
+  \medskip
+
+  \begin{minted}{console}
+    $ systemd-run /usr/local/bin/mydameon
+  \end{minted}
+\end{frame}
+
+%% \begin{frame}
+%%   \frametitle{Before we begin...\\\texttt{systemd-run}}
+
+%% \end{frame}
+
+\begin{frame}
+  \frametitle{Basics}
+  \texttt{User=}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Limiting access to the file system}
+  \begin{itemize}
+  \item \texttt{ProtectHome=yes|read-only}
+  \item \texttt{ProtectSystem=yes|full|strict}
+
+  \item \texttt{InaccessiblePaths=}
+  \item \texttt{ReadOnlyPaths=}
+  \item \texttt{ReadWritePaths=}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Limiting access to the file system\\a better way}
+  \begin{itemize}
+  \item \texttt{RuntimeDirectory=foo}            \# /run/foo/
+  \item \texttt{StateDirectory=foo}              \# /var/lib/foo/
+  \item \texttt{CacheDirectory=foo}              \# /var/cache/foo/
+  \item \texttt{LogsDirectory=foo}               \# /var/log/foo/
+  \item \texttt{ConfigurationDirectory=foo}      \# /etc/foo/
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{minted}{console}
+    $ sudo systemd-run -t -p User=zbyszek -p RuntimeDirectory=foo ls -ld /run/foo
+  \end{minted}
+
+  \begin{itemize}
+  \item automatic \textit{creation} and \textit{ownership}
+  \item automatic \textit{removal}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \begin{itemize}
+  \item \texttt{PrivateTmp=yes}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{User creation on demand?}
+  \begin{itemize}
+  \item \texttt{DynamicUser=yes}
+  \end{itemize}
+
+  \begin{minted}{console}
+$ echo -e 'asdf\n\asdf' | \
+  systemd-run --pipe -p DynamicUser=1 \
+    bash -c 'whoami; grep .' | \
+  systemd-run --pipe -p DynamicUser=1 \
+    bash -c 'whoami; grep .' | \
+  systemd-run --pipe -p DynamicUser=1 \
+    bash -c 'whoami; grep .'
+  \end{minted}
+\end{frame}
+
+\begin{frame}
+  \begin{itemize}
+  \item \texttt{PrivateNetwork=yes}
+  \end{itemize}
+
+  ``\texttt{PrivateNetwork=yes} is the recommeded way to run network servers''
+\end{frame}
+
+\begin{frame}[c]
+  \frametitle{Socket Activation}
+
+  \centering
+  Two types of socket activation:
+
+  \medskip
+  
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \texttt{Accept=yes}\\
+      → a single instance of the service is started for each connection\\
+      → ``wait'' under inetd/xinetd
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \texttt{Accept=no}\\
+      → a single instance of the service is started for each connection\\
+      → ``nowait'' under inetd/xinetd
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+\begin{frame}
+  \begin{itemize}
+  \item \texttt{PrivateDevices=yes}
+  \item \texttt{RestrictAddressFamilies=}
+  \item \texttt{NoNewPrivileges=}
+  \item \texttt{ProtectKernelTunables=}
+  \item \texttt{SystemCallArchitectures=native|x86\_64|i386|...}
+  \item \texttt{LockPersonality=yes}
+  \item \texttt{MemoryDenyWriteExecute=yes}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{System call filtering}
+  ``seccomp mode 2''
+  \begin{itemize}
+  \item \texttt{libseccomp}
+  \item \texttt{syscall1 | syscall2 | @group}
+  \item \texttt{@basic-io}
+  \item \texttt{@obsolete}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Per-service network firewall}
+  
+  \begin{itemize}
+  \item \texttt{IPAddressAllow=}
+  \item \texttt{IPAddressAllow=}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Upcoming features}
+
+  \begin{minted}{console}
+$ systemd-analyze-security systemd-resolved.service
+  \end{minted}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Upcoming features, ctd}
+
+  \begin{itemize}
+  \item \texttt{IPAddressAllow=}
+  \end{itemize}
+\end{frame}
+
+\end{document}
