@@ -4,9 +4,14 @@
 %\setmainfont{Liberation Serif}
 
 \usepackage{minted}
-% \usepackage{redhat}
 \usepackage{hyperref}
 \usepackage{ccicons}
+
+%gets rid of bottom navigation bars
+\setbeamertemplate{footline}[page number]{}
+
+%gets rid of navigation symbols
+\setbeamertemplate{navigation symbols}{}
 
 \title[Systemd security features]{Securing your daemons using systemd}
 \author{Zbigniew Jędrzejewski-Szmek}
@@ -17,14 +22,14 @@
   \medskip
   \ccbysa
 }
-\date{\tiny Ustroń, 10.11.18}
+\date{\tiny Brno, 2020.1.26}
 
 \begin{document}
 \begin{frame}
 \titlepage % Print the title page as the first slide
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
   \frametitle{Before we begin...\\Why use systemd for this at all?}
 
   \begin{itemize}
@@ -32,6 +37,19 @@
   \item abstraction of hardware architecture / kernel version
   \item unprivileged operation
   \end{itemize}
+
+  \pause
+  \bigskip
+
+  Numbers:
+  \begin{minted}{bash}
+$ dnf repoquery --releasever=32 -l --whatprovides \
+    '/usr/lib/systemd/system/*' \
+    rg -i '^/usr/lib/systemd/system/[a-z0-9_@.\\-]+$' | \
+    sort -u | wc -l
+1740!!!
+  \end{minted}
+
 \end{frame}
 
 \begin{frame}[fragile]
@@ -45,27 +63,23 @@
     ExecStart=/usr/local/bin/mydaemon
   \end{minted}
   \begin{minted}{console}
-    $ systemctl start mydaemon.service
+    $ sudo systemctl start mydaemon.service
   \end{minted}
 
   \medskip
   \pause
 
   \begin{minted}{console}
-    $ /usr/local/bin/mydameon
+    $ sudo /usr/local/bin/mydameon
   \end{minted}
 
   \medskip
   \pause
 
   \begin{minted}{console}
-    $ systemd-run /usr/local/bin/mydameon
-    $ systemd-run -t /usr/local/bin/mydameon
+    $ sudo systemd-run /usr/local/bin/mydameon
+    $ sudo systemd-run -t /usr/local/bin/mydameon
   \end{minted}
-\end{frame}
-
-\begin{frame}[c]
-  \Huge{(end of intro)}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -105,6 +119,8 @@
 \end{frame}
 
 \begin{frame}
+  \frametitle{Limiting access to the file system}
+
   \begin{itemize}
   \item \texttt{PrivateTmp=yes}
   \end{itemize}
@@ -234,7 +250,10 @@ $ echo -e 'asdf\nasdf' | \
   \item \texttt{NoNewPrivileges=yes}
   \item \texttt{RestrictAddressFamilies=AF\_UNIX|AF\_INET|AF\_INET6
         \color{gray}|AF\_CAN|AF\_APPLETALK|...}
+  \item \texttt{RestrictSUIDSGID=yes}
   \item \texttt{ProtectKernelTunables=yes}
+  \item \texttt{ProtectHostname=yes}
+  \item \texttt{ProtectKernelLogs=yes}
   \item \texttt{SystemCallArchitectures=native\color{gray}|x86\_64|i386|...}
   \item \texttt{LockPersonality=yes}
   \end{itemize}
@@ -279,37 +298,16 @@ $ systemd-analyze syscall-filter @obsolete
   \begin{itemize}
   \item \texttt{IPAddressAllow=\color{gray}10.20.30.0/24 1.2.3.4}
   \item \texttt{IPAddressDeny=\color{gray}*}
-  \end{itemize}
-\end{frame}
-
-\begin{frame}[c]
-  \Huge{Future features}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Upcoming features}
-
-  \begin{itemize}
-  \item \texttt{PortIngressAllow=}
-  \item \texttt{PortIngressDeny=}
-  \item \texttt{PortEgressAllow=}
-  \item \texttt{PortEgressDeny=}
+  \item \texttt{IP\{Ingress,Egress\}FilterPath=}
   \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-  \frametitle{Upcoming features, ctd}
+  \frametitle{\texttt{systemd-analyze security}}
 
   \begin{minted}{console}
 $ systemd-analyze security systemd-resolved.service
   \end{minted}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{Possible upcoming features}
-
-  \href{https://github.com/systemd/systemd/issues?q=is%3Aissue+is%3Aopen+label%3A%22RFE+%F0%9F%8E%81%22}{https://github.com/systemd/systemd/issues} \\[1 em]
-    label=RFE → 504 Open, 466 Closed
 \end{frame}
 
 \begin{frame}[fragile]
@@ -318,11 +316,13 @@ $ systemd-analyze security systemd-resolved.service
   \bigskip
 
   \url{https://github.com/systemd/systemd}\\
-  docs: \url{http://systemd.github.io/}\\
+  docs: \url{https://systemd.io/}\\
   \phantom{docs: }\url{https://www.freedesktop.org/wiki/Software/systemd/}\hspace*{-5cm}\\
-  this: \url{https://github.com/keszybz/jesien-systemd-security}\hspace*{-5cm}
+
+  \medskip
+  this: \url{https://github.com/keszybz/systemd-security-talk}\hspace*{-5cm}
   \phantom{this: }\\
-  \href{https://github.com/keszybz/jesien-systemd-security/blob/master/jesie%C5%84-systemd-security.pdf}{https://github.com/keszybz/jesien-systemd-security/blob/master/jesień-systemd-security.pdf}\hspace*{-5cm}
+  \url{https://github.com/keszybz/jesien-systemd-security/blob/master/systemd-security.pdf}
 \end{frame}
 
 \end{document}
