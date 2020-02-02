@@ -22,11 +22,19 @@
   \medskip
   \ccbysa
 }
-\date{\tiny Brno, 2020.1.26}
+\date{\tiny FOSDEM, Brussels, 2020.2.2}
 
 \begin{document}
 \begin{frame}
 \titlepage % Print the title page as the first slide
+\end{frame}
+
+\begin{frame}
+  \frametitle{About me}
+
+  systemd upstream\\
+  Fedora (FESCo, systemd maint., Python SIG, Rust SIG)
+
 \end{frame}
 
 \begin{frame}[fragile]
@@ -84,6 +92,7 @@ $ dnf repoquery --releasever=32 -l --whatprovides \
 
 \begin{frame}[fragile]
   \frametitle{Basics}
+  \pause
   \texttt{User=}
 
   \medskip
@@ -93,9 +102,9 @@ $ dnf repoquery --releasever=32 -l --whatprovides \
     $ systemd-run whoami
     root
 
-    $ systemd-run -p User=zbyszek whoami
-    zbyszek
     $ systemd-run --uid=zbyszek whoami
+    zbyszek
+    $ systemd-run -p User=zbyszek whoami
     zbyszek
   \end{minted}
 \end{frame}
@@ -175,7 +184,10 @@ $ sudo systemd-run -t -p User=zbyszek \
   \begin{minted}{console}
 $ systemd-run -p DynamicUser=1 -t whoami
   \end{minted}
-
+\pause
+  \begin{minted}{console}
+run-u215640
+\end{minted}
   \pause
 
   \begin{minted}{console}
@@ -239,8 +251,20 @@ $ echo -e 'asdf\nasdf' | \
   \end{columns}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Per-service network firewall}
+
+  \begin{itemize}
+  \item \texttt{IPAddressAllow=\color{gray}10.20.30.0/24 1.2.3.4}
+  \item \texttt{IPAddressDeny=\color{gray}*}
+  \item \texttt{IP\{Ingress,Egress\}FilterPath=}
+  \end{itemize}
+
+  BPF!
+\end{frame}
+
 \begin{frame}[c]
-  \Huge{Low level stuff}
+  \Huge{Low-level stuff}
 \end{frame}
 
 \begin{frame}
@@ -248,13 +272,11 @@ $ echo -e 'asdf\nasdf' | \
   \item \texttt{MemoryDenyWriteExecute=yes}
   \item \texttt{PrivateDevices=yes}
   \item \texttt{NoNewPrivileges=yes}
-  \item \texttt{RestrictAddressFamilies=AF\_UNIX|AF\_INET|AF\_INET6
-        \color{gray}|AF\_CAN|AF\_APPLETALK|...}
   \item \texttt{RestrictSUIDSGID=yes}
   \item \texttt{ProtectKernelTunables=yes}
+  \item \texttt{ProtectClock=yes}
   \item \texttt{ProtectHostname=yes}
   \item \texttt{ProtectKernelLogs=yes}
-  \item \texttt{SystemCallArchitectures=native\color{gray}|x86\_64|i386|...}
   \item \texttt{LockPersonality=yes}
   \end{itemize}
 \end{frame}
@@ -281,7 +303,15 @@ $ echo -e 'asdf\nasdf' | \
         implemented using \texttt{libseccomp}
   \item \texttt{syscall1 | syscall2 | @group}
   \item \texttt{@basic-io}
-  \item \texttt{@obsolete}
+  \item \texttt{\~@obsolete}
+
+  \medskip
+  \pause
+
+  \item \texttt{SystemCallArchitectures=native\color{gray}|x86\_64|i386|...}
+  \item \texttt{RestrictAddressFamilies=AF\_UNIX|AF\_INET|AF\_INET6
+        \color{gray}|AF\_CAN|AF\_APPLETALK|...}
+
   \end{itemize}
 
   \medskip
@@ -292,16 +322,6 @@ $ systemd-analyze syscall-filter @obsolete
   \end{minted}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Per-service network firewall}
-
-  \begin{itemize}
-  \item \texttt{IPAddressAllow=\color{gray}10.20.30.0/24 1.2.3.4}
-  \item \texttt{IPAddressDeny=\color{gray}*}
-  \item \texttt{IP\{Ingress,Egress\}FilterPath=}
-  \end{itemize}
-\end{frame}
-
 \begin{frame}[fragile]
   \frametitle{\texttt{systemd-analyze security}}
 
@@ -309,6 +329,22 @@ $ systemd-analyze syscall-filter @obsolete
 $ systemd-analyze security systemd-resolved.service
   \end{minted}
 \end{frame}
+
+\begin{frame}
+  \frametitle{Fedora 32: \texttt{systemd-analyze security *}}
+
+  \includegraphics[width=\textwidth]{images/fedora-scores.png}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Stacking}
+
+  the application\\
+  systemd sandboxing\\
+  selinux | apparmor | ...\\
+  kernel
+\end{frame}
+
 
 \begin{frame}[fragile]
   \textcolor{gray}{The End}
